@@ -15,16 +15,19 @@ import java.util.*;
  */
 public class Client extends JFrame
 {
+    private final boolean ShowSplashScreen = true;    //是否显示SplashScreen
+
     private SimpleAttributeSet attrSet = new SimpleAttributeSet();
     private Document publicDoc;
 
     private JTextField inputTextBox = new JTextField();
     private JTextPane logArea = new JTextPane();
+    private JScrollPane scrollPane = new JScrollPane(logArea);
     private JButton textButton = new JButton("发送");
-    private JList onlineList = new JList();
-    private DefaultListModel onlineListModel = new DefaultListModel();
+    private JList<String> onlineList = new JList<>();
+    private DefaultListModel<String> onlineListModel = new DefaultListModel<>();
 
-    private MenuBar serverMenu = new MenuBar();
+    private MenuBar clientMenu = new MenuBar();
     private Menu m_help = new Menu("Help");
     private MenuItem m_about = new MenuItem("About");
 
@@ -35,6 +38,8 @@ public class Client extends JFrame
     private final Color selfTextColor = new Color(0, 51, 102);       //自己发的消息的颜色
     private final Color monitorTextColor = new Color(102, 0, 102);
     private final Color generalTextColor = new Color(0, 0, 0);
+
+    private MyListCellRenderer notifyRenderer = new MyListCellRenderer();
 
     private PrintStream ps;
 	private BufferedReader br;
@@ -55,51 +60,39 @@ public class Client extends JFrame
     {
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.setSize(400, 550);
-        this.setTitle(String.format("客户端(%s)", nickname));
+        this.setTitle("客户端");
 
+        // 设置聊天记录的默认字体等
         publicDoc = logArea.getStyledDocument();
-        StyleConstants.setFontSize(attrSet, 16);
+        StyleConstants.setFontSize(attrSet, 14);
 //        StyleConstants.setFontFamily(attrSet, "微软雅黑");
-
         logArea.setEditable(false);
-        this.add(logArea, BorderLayout.CENTER);
+        this.add(scrollPane, BorderLayout.CENTER);      //TODO: 滚动条自动滑动到最底
+
+        // 设置左边的在线列表
+        onlineListModel.addElement("公频");
+        onlineList.setModel(onlineListModel);
+        onlineList.setCellRenderer(notifyRenderer);
+        onlineList.setBackground(Color.lightGray);
+        onlineList.setSelectedIndex(0);
+        this.add(onlineList, BorderLayout.WEST);
+
+        // 设置下面的输入栏
+        inputTextBox.setFont(inputTextBox.getFont().deriveFont(14F));
+        textButton.setFont(new Font("微软雅黑", textButton.getFont().getStyle(), textButton.getFont().getSize()));
         JPanel bottom = new JPanel();
         bottom.setLayout(new BorderLayout());
         bottom.add(inputTextBox, BorderLayout.CENTER);
         bottom.add(textButton, BorderLayout.EAST);
         this.add(bottom, BorderLayout.SOUTH);
 
-        onlineListModel.addElement("公频");
-        //DEBUG
-        //onlineListModel.addElement("Equim");
-        //onlineListModel.addElement("Vivian");
-        //
-        onlineList.setModel(onlineListModel);
-        onlineList.setBackground(Color.lightGray);
-        onlineList.setSelectedIndex(0);
-        this.add(onlineList, BorderLayout.WEST);
-
+        // 关于信息             //TODO: 文件菜单
         m_help.add(m_about);
-        //关于信息
-        m_about.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try
-                {
-                    if (JOptionPane.showConfirmDialog(null,
-                            "真的很不乐意用Java啊！！\n具体的等写完再说吧\n\n要不要去我的GitHub看看呢？",
-                            "关于", JOptionPane.YES_NO_OPTION) == 0)
-                        Desktop.getDesktop().browse(new URI("https://github.com/Equim-chan"));
-                }
-                catch(Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-            }
-        });
+        m_about.addActionListener(new HTML_About());
+        clientMenu.add(m_help);
+        this.setMenuBar(clientMenu);
 
-        serverMenu.add(m_help);
-        this.setMenuBar(serverMenu);
+        // 完成所有UI初始化
         this.setVisible(true);
     }
     //
@@ -109,6 +102,16 @@ public class Client extends JFrame
     {
         try
         {
+            // 显示SplashScreen
+            if (ShowSplashScreen)
+            {
+                EqSplashScreen splash = new EqSplashScreen(this);
+                splash.setVisible(true);
+                //Thread.sleep(1500);
+            }
+
+            this.Init_UI();
+
             do
             {
                 nickname = JOptionPane.showInputDialog("请输入昵称");
@@ -121,8 +124,7 @@ public class Client extends JFrame
                     JOptionPane.showMessageDialog(null, "嘻嘻、这些名字也是不行的！", "", JOptionPane.ERROR_MESSAGE);
                 }
             }while(nickname == null || nickname.equals("群主") || nickname.equals("公频"));
-
-            this.Init_UI();
+            this.setTitle(String.format("客户端(%s)", nickname));
 
             client = new Socket("127.0.0.1", 2333);
             StyleConstants.setForeground(attrSet, systemTextColor);
@@ -181,18 +183,8 @@ public class Client extends JFrame
                     {
                         String queryTo = onlineList.getSelectedValue().toString();      //私聊给谁
 
-                        onlineList.setCellRenderer(new DefaultListCellRenderer() {      //撤销高亮
-                            @Override
-                            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                                Component temp = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                                if (value.toString().equals(queryTo) || (queryTo.equals("公频") && value.toString().equals("公频")))
-                                {
-                                    setForeground(Color.black);
-                                    setBackground(Color.lightGray);
-                                }
-                                return temp;
-                            }
-                        });
+                        notifyRenderer.remove(queryTo);
+                        onlineList.updateUI();
 
                         if (queryTo.equals("公频"))
                         {
@@ -220,7 +212,7 @@ public class Client extends JFrame
                             String receivedMsg = br.readLine();
 
                             //解析字符串：
-                            // monitor&msg                | 服务器消息
+                            // monitor&msg                | 公频群主消息
                             // public&username&msg        | 公频消息
                             // query&username&msg         | 私聊消息
                             // onlineList&username&...    | 在线列表 (刚刚登陆时获取)
@@ -229,6 +221,12 @@ public class Client extends JFrame
                             String[] analyzedMsgs = receivedMsg.split("&");
                             if (analyzedMsgs[0].equals("monitor"))
                             {
+                                if (!onlineList.getSelectedValue().toString().equals("公频"))      //给tab加高亮
+                                {
+                                    notifyRenderer.add("公频");
+                                    onlineList.updateUI();
+                                }
+
                                 StyleConstants.setForeground(attrSet, monitorTextColor);
                                 publicDoc.insertString(publicDoc.getLength(),
                                         getTimeStamp() + "群主: " + analyzedMsgs[1] + "\n", attrSet);
@@ -237,18 +235,8 @@ public class Client extends JFrame
                             {
                                 if (!onlineList.getSelectedValue().toString().equals("公频"))      //给tab加高亮
                                 {
-                                    onlineList.setCellRenderer(new DefaultListCellRenderer() {
-                                        @Override
-                                        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                                            Component temp = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                                            if (value.toString().equals("公频"))
-                                            {
-                                                setForeground(notifyTextColor);
-                                                setBackground(notifyBackgroundColor);
-                                            }
-                                            return temp;
-                                        }
-                                    });
+                                    notifyRenderer.add("公频");
+                                    onlineList.updateUI();
                                 }
 
                                 StyleConstants.setForeground(attrSet, generalTextColor);
@@ -259,18 +247,8 @@ public class Client extends JFrame
                             {
                                 if (!onlineList.getSelectedValue().toString().equals(analyzedMsgs[1]))      //给tab加高亮
                                 {
-                                    onlineList.setCellRenderer(new DefaultListCellRenderer() {
-                                        @Override
-                                        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                                            Component temp = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                                            if (value.toString().equals(analyzedMsgs[1]))
-                                            {
-                                                setForeground(notifyTextColor);
-                                                setBackground(notifyBackgroundColor);
-                                            }
-                                            return temp;
-                                        }
-                                    });
+                                    notifyRenderer.add(analyzedMsgs[1]);
+                                    onlineList.updateUI();
                                 }
 
                                 Document currentQueryDoc = nameDocMap.get(analyzedMsgs[1]);
@@ -287,6 +265,7 @@ public class Client extends JFrame
                                     onlineListModel.addElement(analyzedMsgs[i]);
                                     nameDocMap.put(analyzedMsgs[i], new DefaultStyledDocument());
                                 }
+                                onlineList.updateUI();
                             }
                             else if (analyzedMsgs[0].equals("online") && !analyzedMsgs[1].equals(nickname))
                             {
@@ -301,8 +280,14 @@ public class Client extends JFrame
                             else if (analyzedMsgs[0].equals("offline"))
                             {
                                 //有人下线的情况
+                                if (onlineList.getSelectedValue().toString().equals(analyzedMsgs[1]))
+                                {
+                                    onlineList.setSelectedIndex(0);
+                                    logArea.setDocument(publicDoc);
+                                }
                                 onlineListModel.removeElement(analyzedMsgs[1]);
                                 nameDocMap.remove(analyzedMsgs[1]);
+
                                 try
                                 {
                                     StyleConstants.setForeground(attrSet, activityTextColor);
@@ -317,8 +302,15 @@ public class Client extends JFrame
                         }
                         catch(SocketException disconnectionException)
                         {
+                            if (!onlineList.getSelectedValue().toString().equals("公频"))
+                            {
+                                onlineList.setSelectedIndex(0);
+                                logArea.setDocument(publicDoc);
+                            }
                             onlineListModel.removeAllElements();
+                            //onlineList.updateUI();
 
+                            //TODO: 很奇怪，运行不到这下面
                             try
                             {
                                 StyleConstants.setForeground(attrSet, systemTextColor);
@@ -343,7 +335,20 @@ public class Client extends JFrame
             }).start();
 
         }
-        catch(Exception e)
+        catch (ConnectException ex)
+        {
+            try
+            {
+                StyleConstants.setForeground(attrSet, systemTextColor);
+                publicDoc.insertString(publicDoc.getLength(), getTimeStamp() + "连接失败。\n" + ex.getMessage() +"\n", attrSet);
+            }
+            catch (BadLocationException impossible)
+            {
+                impossible.printStackTrace();
+            }
+            ex.printStackTrace();
+        }
+        catch (Exception e)
         {
             e.printStackTrace();
         }

@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Class-Path: src\HTML_About.java src\MyListCellRenderer.java src\EqSpla
+ shScreen.java
+Main-Class: Server
+
