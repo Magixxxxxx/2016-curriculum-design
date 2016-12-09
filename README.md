@@ -1,5 +1,8 @@
 ## Description
 反正也是个终将成为黑历史的东西……
+
+~~本来是因为一休息就会打断思路，结果就一直不休息直接通宵了orz……~~
+
 每次测试的时候，屏幕上……
 ```
 ……
@@ -15,15 +18,18 @@
 ## Features
 * 有公频和私聊
 * 上下线有提示
-* 服务端可以kick
-* 可以相互传文件
 * 有消息时Tab会notify (这也算feature?)
+
+*Features in next version:*
+* *服务端可以kick*
+* *可以相互传文件*
+
 
 ## Known issues
 * ……列不完啊
 
 ## Setup
-只需要
+很简单，只需要
 ```
 git clone https://github.com/Equim-chan/2016-curriculum-design.git
 ```
