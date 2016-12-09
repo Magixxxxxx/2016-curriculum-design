@@ -51,7 +51,7 @@ public class Server extends JFrame
     //
     //  UI初始化
     //
-    private void Init_UI()
+    private void Init_UI()                              //TODO: 加上滚动条支持
     {
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.setSize(400, 550);
@@ -129,14 +129,14 @@ public class Server extends JFrame
                         while (true)
                         {
                             Socket newClient = server.accept();              //好想用BeginAccept()
-                            clientList.add(newClient);                      //TODO:用map来建立nickname和socket的映射
+                            clientList.add(newClient);
                             //logArea.append("有人上线");
 
                             // 发送群主的消息，可能是公频也可能是私聊
                             ActionListener sendText = new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
-                                    if (inputTextBox.getText() != null)        //其实这里会触发bug，不知道为什么，有几个socket就会发几次
+                                    if (!inputTextBox.getText().isEmpty())        //其实这里会触发bug，不知道为什么，有几个socket就会发几次
                                     {
                                         try
                                         {
@@ -144,7 +144,8 @@ public class Server extends JFrame
                                             if (sendToWho.equals("公频"))
                                             {
                                                 StyleConstants.setForeground(attrSet, monitorTextColor);
-                                                publicDoc.insertString(publicDoc.getLength(), getTimeStamp() + "群主: " + inputTextBox.getText() +"\n", attrSet);
+                                                publicDoc.insertString(publicDoc.getLength(),
+                                                        getTimeStamp() + "群主: " + inputTextBox.getText() +"\n", attrSet);
 
                                                 //遍历socket list群发
                                                 for(Socket clientIter : clientList)
@@ -159,14 +160,14 @@ public class Server extends JFrame
                                                 Document currentQueryDoc = logArea.getDocument();
                                                 StyleConstants.setForeground(attrSet, monitorTextColor);
                                                 currentQueryDoc.insertString(currentQueryDoc.getLength(),
-                                                        getTimeStamp() + "群主: "  + inputTextBox.getText() +"\n", attrSet);
+                                                        getTimeStamp() + "群主: " + inputTextBox.getText() +"\n", attrSet);
 
                                                 // 发送给对方
                                                 ps = new PrintStream(nameSocketMap.get(sendToWho).getOutputStream());
                                                 ps.println("query&群主&" + inputTextBox.getText());
                                             }
 
-                                            inputTextBox.setText(null);         //上一段可能有延迟，所以这里本来可以小小地优化一下的
+                                            inputTextBox.setText("");         //上一段可能有延迟，所以这里本来可以小小地优化一下的
                                         }
                                         catch(Exception ex)
                                         {
@@ -187,7 +188,7 @@ public class Server extends JFrame
                                         String queryTo = onlineList.getSelectedValue().toString();      //私聊给谁
 
                                         onlineList.setCellRenderer(new DefaultListCellRenderer() {      //撤销高亮
-                                            @Override
+                                            @Override                                                   //TODO: 这里有bug！！！首先，只能高亮一个，然后，点任何一个都能解除高亮。
                                             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                                                 Component temp = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                                                 if (value.toString().equals(queryTo) || (queryTo.equals("公频") && value.toString().equals("公频")))
@@ -296,8 +297,8 @@ public class Server extends JFrame
                                             }
                                             else if (analyzedMsgs[0].equals("query"))        //转发私聊
                                             {
-                                                new PrintStream(nameSocketMap.get(analyzedMsgs[2]).getOutputStream())
-                                                        .println(analyzedMsgs[1] + "&" + analyzedMsgs[3]);
+                                                ps = new PrintStream(nameSocketMap.get(analyzedMsgs[2]).getOutputStream());
+                                                ps.println("query&" + analyzedMsgs[1] + "&" + analyzedMsgs[3]);
                                             }
                                             else if (analyzedMsgs[0].equals("toMonitor"))
                                             {

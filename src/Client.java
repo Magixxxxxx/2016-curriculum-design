@@ -153,7 +153,7 @@ public class Client extends JFrame
                                 if (sendToWho.equals("群主"))
                                     ps.println("toMonitor&" + nickname + "&" + inputTextBox.getText());
                                 else
-                                    ps.println("query&" + nickname + "&" + sendToWho + inputTextBox.getText());
+                                    ps.println("query&" + nickname + "&" + sendToWho + "&" + inputTextBox.getText());
 
                                 Document currentQueryDoc = logArea.getDocument();
                                 StyleConstants.setForeground(attrSet, selfTextColor);
@@ -163,7 +163,7 @@ public class Client extends JFrame
 
                             inputTextBox.setText(null);
                         }
-                        catch(BadLocationException ex)
+                        catch(Exception ex)
                         {
                             ex.printStackTrace();
                         }
