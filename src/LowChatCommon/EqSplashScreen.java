@@ -1,3 +1,5 @@
+package LowChatCommon;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.applet.*;
@@ -23,9 +25,9 @@ public class EqSplashScreen extends JDialog
             this.main = main;           //好像没什么必要
             this.image = ImageIO.read(EqSplashScreen.class.getResource("/res/BG.bmp"));
             this.setAlwaysOnTop(true);
-            this.setUndecorated(true);
+            this.setUndecorated(true);      //去掉标题栏
             this.setSize(new Dimension(image.getWidth(), image.getHeight()));
-            this.setLocationRelativeTo(null);
+            this.setLocationRelativeTo(null);       //居中
             this.getContentPane().setLayout(null);
 
             this.main.addComponentListener(new ComponentAdapter() {

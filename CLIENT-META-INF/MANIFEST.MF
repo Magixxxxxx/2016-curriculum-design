@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Class-Path: src\HTML_About.java src\MyListCellRenderer.java src\EqSpla
- shScreen.java
+Class-Path: src\LowChatCommon\HTML_About.java src\LowChatCommon\MyList
+ CellRenderer.java src\LowChatCommon\EqSplashScreen.java
 Main-Class: Client
 

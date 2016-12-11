@@ -1,5 +1,5 @@
 ## Description
-反正也是个终将成为黑历史的东西……
+反正也是个终将成为黑历史的东西，虽然是三个通宵做出来的……
 
 ~~本来是因为一休息就会打断思路，结果就一直不休息直接通宵了orz……~~
 
@@ -36,10 +36,8 @@
 * 上下线有提示
 * 有消息时Tab会notify (这也算feature?)
 * ~~有HTML/CSS写的About窗口~~
-
-*Features not yet implemented:*
-* *服务端可以kick*
-* *可以相互传文件*
+* 服务端可以kick
+* 可以相互传文件
 
 
 ## Known issues
